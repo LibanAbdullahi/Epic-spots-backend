@@ -1,0 +1,13 @@
+# Node
+node_modules
+
+# Environment variables
+.env
+.env.example
+.env.development
+.env.production
+.env.test
+.env.development.local
+.env.production.local
+.env.test.local
+
