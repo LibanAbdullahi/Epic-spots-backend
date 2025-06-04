@@ -11,3 +11,7 @@ node_modules
 .env.production.local
 .env.test.local
 
+# Uploads (keep directory structure but ignore files)
+uploads/*
+!uploads/.gitkeep
+

@@ -1,8 +1,9 @@
-import express from 'express';
+import express, { Router } from 'express';
 import { prisma } from '../index';
 import { authenticateToken, requireRole, AuthRequest } from '../middleware/auth';
+import { uploadSpotImages } from '../middleware/upload';
 
-const router = express.Router();
+const router = Router();
 
 // Get all spots (public route)
 router.get('/', async (req, res): Promise<void> => {
@@ -77,8 +78,13 @@ router.get('/:id', async (req, res): Promise<void> => {
 });
 
 // Create new spot (owners only)
-router.post('/', authenticateToken, requireRole(['OWNER']), async (req: AuthRequest, res): Promise<void> => {
+router.post('/', authenticateToken, requireRole(['OWNER']), uploadSpotImages, async (req: AuthRequest, res): Promise<void> => {
   try {
+    console.log('=== SPOT CREATION DEBUG ===');
+    console.log('Request body:', req.body);
+    console.log('Request files:', req.files);
+    console.log('Files array:', Array.isArray(req.files) ? req.files : 'Not an array');
+    
     const { title, description, location, price } = req.body;
 
     // Validate required fields
@@ -93,12 +99,34 @@ router.post('/', authenticateToken, requireRole(['OWNER']), async (req: AuthRequ
       return;
     }
 
+    // Handle uploaded images
+    const images: string[] = [];
+    if (req.files && Array.isArray(req.files)) {
+      console.log(`Processing ${req.files.length} uploaded files`);
+      for (const file of req.files) {
+        console.log('File details:', {
+          filename: file.filename,
+          originalname: file.originalname,
+          mimetype: file.mimetype,
+          size: file.size,
+          path: file.path
+        });
+        // Store relative path for database
+        images.push(`/uploads/${file.filename}`);
+      }
+    } else {
+      console.log('No files uploaded or files not in expected format');
+    }
+
+    console.log('Images to save:', images);
+
     const spot = await prisma.spot.create({
       data: {
         title,
         description,
         location,
         price: parseFloat(price),
+        images,
         ownerId: req.user!.id
       },
       include: {
@@ -111,6 +139,9 @@ router.post('/', authenticateToken, requireRole(['OWNER']), async (req: AuthRequ
         }
       }
     });
+
+    console.log('Created spot with images:', spot.images);
+    console.log('=== END DEBUG ===');
 
     res.status(201).json({
       message: 'Spot created successfully',
