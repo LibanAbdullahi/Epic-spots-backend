@@ -16,6 +16,7 @@ router.get('/my-bookings', authenticateToken, async (req: AuthRequest, res): Pro
             title: true,
             location: true,
             price: true,
+            images: true,
             owner: {
               select: {
                 name: true,
@@ -119,9 +120,11 @@ router.post('/', authenticateToken, async (req: AuthRequest, res): Promise<void>
       include: {
         spot: {
           select: {
+            id: true,
             title: true,
             location: true,
-            price: true
+            price: true,
+            images: true
           }
         }
       }
