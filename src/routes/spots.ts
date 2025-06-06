@@ -17,9 +17,15 @@ router.get('/', async (req, res): Promise<void> => {
             email: true
           }
         },
+        ratings: {
+          select: {
+            rating: true
+          }
+        },
         _count: {
           select: {
-            bookings: true
+            bookings: true,
+            ratings: true
           }
         }
       },
@@ -28,7 +34,21 @@ router.get('/', async (req, res): Promise<void> => {
       }
     });
 
-    res.json({ spots });
+    // Calculate average rating for each spot
+    const spotsWithRatings = spots.map(spot => {
+      const averageRating = spot.ratings.length > 0
+        ? spot.ratings.reduce((sum, r) => sum + r.rating, 0) / spot.ratings.length
+        : 0;
+      
+      return {
+        ...spot,
+        averageRating: Math.round(averageRating * 10) / 10,
+        totalRatings: spot._count.ratings,
+        ratings: undefined // Remove detailed ratings from list view
+      };
+    });
+
+    res.json({ spots: spotsWithRatings });
   } catch (error) {
     console.error('Error fetching spots:', error);
     res.status(500).json({ error: 'Failed to fetch spots' });
@@ -61,6 +81,24 @@ router.get('/:id', async (req, res): Promise<void> => {
               }
             }
           }
+        },
+        ratings: {
+          include: {
+            user: {
+              select: {
+                id: true,
+                name: true
+              }
+            }
+          },
+          orderBy: {
+            createdAt: 'desc'
+          }
+        },
+        _count: {
+          select: {
+            ratings: true
+          }
         }
       }
     });
@@ -70,7 +108,18 @@ router.get('/:id', async (req, res): Promise<void> => {
       return;
     }
 
-    res.json({ spot });
+    // Calculate average rating
+    const averageRating = spot.ratings.length > 0
+      ? spot.ratings.reduce((sum, r) => sum + r.rating, 0) / spot.ratings.length
+      : 0;
+
+    const spotWithRating = {
+      ...spot,
+      averageRating: Math.round(averageRating * 10) / 10,
+      totalRatings: spot._count.ratings
+    };
+
+    res.json({ spot: spotWithRating });
   } catch (error) {
     console.error('Error fetching spot:', error);
     res.status(500).json({ error: 'Failed to fetch spot' });

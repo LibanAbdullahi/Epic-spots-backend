@@ -27,6 +27,7 @@ model User {
   // Relations
   spots    Spot[]
   bookings Booking[]
+  ratings  Rating[]
 
   @@map("users")
 }
@@ -45,6 +46,7 @@ model Spot {
   // Relations
   owner    User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   bookings Booking[]
+  ratings  Rating[]
 
   @@map("spots")
 }
@@ -65,4 +67,22 @@ model Booking {
   // Prevent double booking of the same spot for overlapping dates
   @@unique([spotId, dateFrom, dateTo])
   @@map("bookings")
+}
+
+model Rating {
+  id        String   @id @default(cuid())
+  spotId    String
+  userId    String
+  rating    Int      // 1-5 stars
+  comment   String?  // Optional review comment
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  spot Spot @relation(fields: [spotId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Prevent multiple ratings from the same user for the same spot
+  @@unique([spotId, userId])
+  @@map("ratings")
 } 

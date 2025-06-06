@@ -10,6 +10,7 @@ import authRoutes from './routes/auth';
 import spotRoutes from './routes/spots';
 import bookingRoutes from './routes/bookings';
 import userRoutes from './routes/users';
+import ratingRoutes from './routes/ratings';
 
 // Load environment variables
 dotenv.config();
@@ -47,6 +48,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/spots', spotRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/ratings', ratingRoutes);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
