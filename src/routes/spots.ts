@@ -134,7 +134,7 @@ router.post('/', authenticateToken, requireRole(['OWNER']), uploadSpotImages, as
     console.log('Request files:', req.files);
     console.log('Files array:', Array.isArray(req.files) ? req.files : 'Not an array');
     
-    const { title, description, location, price } = req.body;
+    const { title, description, location, price, latitude, longitude } = req.body;
 
     // Validate required fields
     if (!title || !description || !location || !price) {
@@ -175,6 +175,8 @@ router.post('/', authenticateToken, requireRole(['OWNER']), uploadSpotImages, as
         description,
         location,
         price: parseFloat(price),
+        latitude: latitude ? parseFloat(latitude) : null,
+        longitude: longitude ? parseFloat(longitude) : null,
         images,
         ownerId: req.user!.id
       },
@@ -206,7 +208,7 @@ router.post('/', authenticateToken, requireRole(['OWNER']), uploadSpotImages, as
 router.put('/:id', authenticateToken, requireRole(['OWNER']), async (req: AuthRequest, res): Promise<void> => {
   try {
     const { id } = req.params;
-    const { title, description, location, price } = req.body;
+    const { title, description, location, price, latitude, longitude } = req.body;
 
     // Check if spot exists and belongs to the user
     const existingSpot = await prisma.spot.findUnique({
@@ -235,7 +237,9 @@ router.put('/:id', authenticateToken, requireRole(['OWNER']), async (req: AuthRe
         ...(title && { title }),
         ...(description && { description }),
         ...(location && { location }),
-        ...(price && { price: parseFloat(price) })
+        ...(price && { price: parseFloat(price) }),
+        ...(latitude !== undefined && { latitude: latitude ? parseFloat(latitude) : null }),
+        ...(longitude !== undefined && { longitude: longitude ? parseFloat(longitude) : null })
       },
       include: {
         owner: {

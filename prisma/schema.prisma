@@ -38,6 +38,8 @@ model Spot {
   description String
   location    String
   price       Float
+  latitude    Float?   // Optional coordinates for map display
+  longitude   Float?   // Optional coordinates for map display
   images      String[] @default([])
   ownerId     String
   createdAt   DateTime @default(now())
