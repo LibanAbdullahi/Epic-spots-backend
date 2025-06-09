@@ -205,7 +205,7 @@ router.post('/', authenticateToken, requireRole(['OWNER']), uploadSpotImages, as
 });
 
 // Update spot (owner only)
-router.put('/:id', authenticateToken, requireRole(['OWNER']), async (req: AuthRequest, res): Promise<void> => {
+router.put('/:id', authenticateToken, requireRole(['OWNER']), uploadSpotImages, async (req: AuthRequest, res): Promise<void> => {
   try {
     const { id } = req.params;
     const { title, description, location, price, latitude, longitude } = req.body;
@@ -231,6 +231,24 @@ router.put('/:id', authenticateToken, requireRole(['OWNER']), async (req: AuthRe
       return;
     }
 
+    // Handle new uploaded images
+    const newImages: string[] = [];
+    if (req.files && Array.isArray(req.files)) {
+      for (const file of req.files) {
+        newImages.push(`/uploads/${file.filename}`);
+      }
+    }
+
+    // Get existing images and append new ones
+    let updatedImages: string[] | undefined;
+    if (newImages.length > 0) {
+      const currentSpot = await prisma.spot.findUnique({
+        where: { id },
+        select: { images: true }
+      });
+      updatedImages = [...(currentSpot?.images || []), ...newImages];
+    }
+
     const updatedSpot = await prisma.spot.update({
       where: { id },
       data: {
@@ -239,7 +257,8 @@ router.put('/:id', authenticateToken, requireRole(['OWNER']), async (req: AuthRe
         ...(location && { location }),
         ...(price && { price: parseFloat(price) }),
         ...(latitude !== undefined && { latitude: latitude ? parseFloat(latitude) : null }),
-        ...(longitude !== undefined && { longitude: longitude ? parseFloat(longitude) : null })
+        ...(longitude !== undefined && { longitude: longitude ? parseFloat(longitude) : null }),
+        ...(updatedImages && { images: updatedImages })
       },
       include: {
         owner: {
