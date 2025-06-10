@@ -9,6 +9,7 @@ import passport from './config/passport';
 
 // Import routes
 import authRoutes from './routes/auth';
+import passwordRoutes from './routes/password';
 import spotRoutes from './routes/spots';
 import bookingRoutes from './routes/bookings';
 import userRoutes from './routes/users';
@@ -62,6 +63,7 @@ app.use('/uploads', (req, res, next) => {
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/password', passwordRoutes);
 app.use('/api/spots', spotRoutes);
 app.use('/api/bookings', bookingRoutes);
 app.use('/api/users', userRoutes);
