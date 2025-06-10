@@ -3,6 +3,7 @@ import bcrypt from 'bcryptjs';
 import jwt, { SignOptions } from 'jsonwebtoken';
 import { prisma } from '../index';
 import { authenticateToken, AuthRequest } from '../middleware/auth';
+import passport from '../config/passport';
 
 const router = express.Router();
 
@@ -87,6 +88,11 @@ router.post('/login', async (req, res): Promise<void> => {
     }
 
     // Verify password
+    if (!user.password) {
+      res.status(401).json({ error: 'Invalid email or password' });
+      return;
+    }
+    
     const isValidPassword = await bcrypt.compare(password, user.password);
 
     if (!isValidPassword) {
@@ -147,6 +153,51 @@ router.get('/profile', authenticateToken, async (req: AuthRequest, res): Promise
     console.error('Profile error:', error);
     res.status(500).json({ error: 'Failed to get user profile' });
   }
+});
+
+// Google OAuth Routes
+router.get('/google', 
+  passport.authenticate('google', { scope: ['profile', 'email'] })
+);
+
+router.get('/google/callback', 
+  passport.authenticate('google', { failureRedirect: `${process.env.CLIENT_URL}/login?error=oauth_failed` }),
+  async (req: any, res): Promise<void> => {
+    try {
+      // Generate JWT token for the OAuth user
+      const user = req.user;
+      const token = jwt.sign(
+        { userId: user.id, email: user.email },
+        process.env.JWT_SECRET as string,
+        { expiresIn: process.env.JWT_EXPIRES_IN || '7d' } as SignOptions
+      );
+
+      // Redirect to frontend with token
+      const frontendUrl = process.env.CLIENT_URL || 'http://localhost:5173';
+      res.redirect(`${frontendUrl}/login/callback?token=${token}&user=${encodeURIComponent(JSON.stringify({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        avatar: user.avatar
+      }))}`);
+    } catch (error) {
+      console.error('OAuth callback error:', error);
+      res.redirect(`${process.env.CLIENT_URL}/login?error=oauth_callback_failed`);
+    }
+  }
+);
+
+// OAuth logout
+router.post('/logout', (req, res): void => {
+  req.logout((err) => {
+    if (err) {
+      console.error('Logout error:', err);
+      res.status(500).json({ error: 'Failed to logout' });
+      return;
+    }
+    res.json({ message: 'Logged out successfully' });
+  });
 });
 
 export default router; 

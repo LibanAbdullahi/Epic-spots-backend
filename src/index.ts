@@ -3,7 +3,9 @@ import cors from 'cors';
 import helmet from 'helmet';
 import dotenv from 'dotenv';
 import path from 'path';
+import session from 'express-session';
 import { PrismaClient } from '@prisma/client';
+import passport from './config/passport';
 
 // Import routes
 import authRoutes from './routes/auth';
@@ -34,6 +36,21 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Session configuration for OAuth
+app.use(session({
+  secret: process.env.SESSION_SECRET || 'your-session-secret-key',
+  resave: false,
+  saveUninitialized: false,
+  cookie: {
+    secure: process.env.NODE_ENV === 'production',
+    maxAge: 24 * 60 * 60 * 1000 // 24 hours
+  }
+}));
+
+// Initialize Passport
+app.use(passport.initialize());
+app.use(passport.session());
 
 // Serve static files from uploads directory with proper headers
 app.use('/uploads', (req, res, next) => {
@@ -77,21 +94,21 @@ app.use('*', (req, res) => {
 const startServer = async () => {
   try {
     await prisma.$connect();
-    console.log('✅ Database connected successfully');
+    console.log('Database connected successfully');
     
     app.listen(PORT, () => {
-      console.log(`🚀 Server running on http://localhost:${PORT}`);
-      console.log(`📚 API Health: http://localhost:${PORT}/api/health`);
+      console.log(`Server running on http://localhost:${PORT}`);
+      console.log(`API Health: http://localhost:${PORT}/api/health`);
     });
   } catch (error) {
-    console.error('❌ Failed to start server:', error);
+    console.error('Failed to start server:', error);
     process.exit(1);
   }
 };
 
 // Graceful shutdown
 process.on('SIGINT', async () => {
-  console.log('\n🛑 Shutting down server...');
+  console.log('\nShutting down server...');
   await prisma.$disconnect();
   process.exit(0);
 });

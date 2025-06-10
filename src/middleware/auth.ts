@@ -7,7 +7,7 @@ export interface AuthRequest extends Request {
     id: string;
     email: string;
     role: string;
-  };
+  } | any;
 }
 
 export const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
